@@ -8,10 +8,12 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "product")
 @Getter
+@Setter
 @NoArgsConstructor // JPA 기본 생성자 추가
 public class Product {
     @Id
