@@ -4,6 +4,8 @@ import com.practice.sample.dto.ProductExtendedDTO;
 import com.practice.sample.dto.ProductSimpleDTO;
 import com.practice.sample.entity.Product;
 import com.practice.sample.repository.ProductRepository;
+import com.practice.sample.vo.ProductVO;
+import com.querydsl.core.types.Projections;
 import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -39,8 +41,13 @@ class ProductReadServiceTest {
 
     @Test
     public void testProductSimpleDTOConversion() {
-        ProductSimpleDTO result = entityService.readProductById(product.getId(),
-                e -> new ProductSimpleDTO(e.getId(), e.getName()));
+        ProductVO productVO = entityService.readProductById(product.getId(), product ->
+                Projections.constructor(
+                        ProductVO.class,
+                        product.id,
+                        product.name
+                ));
+        ProductSimpleDTO result = new ProductSimpleDTO(productVO.getId(), productVO.getName());
 
         assertNotNull(result);
         assertEquals(product.getId(), result.id());
@@ -49,13 +56,14 @@ class ProductReadServiceTest {
 
     @Test
     public void testExtendedDTOConversion() {
-        ProductExtendedDTO result = entityService.readProductById(product.getId(),
-                e -> new ProductExtendedDTO(
-                        e.getId(),
-                        e.getName(),
-                        e.getDescription(),
-                        e.getVersion()
-                ));
+        ProductVO productVO = entityService.readProductById(product.getId(), product -> Projections.constructor(
+                ProductVO.class,
+                product.id,
+                product.name,
+                product.description,
+                product.version
+        ));
+        ProductExtendedDTO result = new ProductExtendedDTO(productVO.getId(), productVO.getName(), productVO.getDescription(), productVO.getVersion());
 
         assertNotNull(result);
         assertEquals(product.getId(), result.id());

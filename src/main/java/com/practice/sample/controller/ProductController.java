@@ -3,6 +3,8 @@ package com.practice.sample.controller;
 import com.practice.sample.dto.ProductExtendedDTO;
 import com.practice.sample.dto.ProductSimpleDTO;
 import com.practice.sample.service.ProductReadService;
+import com.practice.sample.vo.ProductVO;
+import com.querydsl.core.types.Projections;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,17 +22,28 @@ public class ProductController {
 
     @GetMapping("/{id}/basic")
     public ResponseEntity<ProductSimpleDTO> getSimple(@PathVariable Long id) {
-        ProductSimpleDTO response = productReadService.readProductById(id, vo ->
-                new ProductSimpleDTO(vo.getId(), vo.getDescription()));
+        ProductVO productVO = productReadService.readProductById(id, product ->
+                Projections.constructor(
+                        ProductVO.class,
+                        product.id,
+                        product.name
+                ));
 
+        ProductSimpleDTO response = new ProductSimpleDTO(productVO.getId(), productVO.getName());
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}/extended")
     public ResponseEntity<ProductExtendedDTO> getExtended(@PathVariable Long id) {
-        ProductExtendedDTO response = productReadService.readProductById(id, vo ->
-                new ProductExtendedDTO(vo.getId(), vo.getName(), vo.getDescription(), vo.getVersion()));
+        ProductVO productVO = productReadService.readProductById(id, product -> Projections.constructor(
+                ProductVO.class,
+                product.id,
+                product.name,
+                product.description,
+                product.version
+        ));
 
+        ProductExtendedDTO response = new ProductExtendedDTO(productVO.getId(), productVO.getName(), productVO.getDescription(), productVO.getVersion());
         return ResponseEntity.ok(response);
     }
 }

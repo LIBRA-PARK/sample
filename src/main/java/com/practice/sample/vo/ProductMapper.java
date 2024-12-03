@@ -1,7 +1,8 @@
 package com.practice.sample.vo;
 
-import com.practice.sample.entity.Product;
+import com.practice.sample.entity.QProduct;
 
+@FunctionalInterface
 public interface ProductMapper<T> {
-    T convert(Product product);
+    T convert(QProduct product);
 }
