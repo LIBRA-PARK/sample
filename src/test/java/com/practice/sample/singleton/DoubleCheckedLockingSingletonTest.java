@@ -12,6 +12,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -42,5 +43,25 @@ class DoubleCheckedLockingSingletonTest {
 
         // 모든 스레드가 동일한 초기화 상태를 보고 있는지 확인
         assertEquals(1, dataValues.size(), "모든 인스턴스에 대한 data 필드가 42가 맞는지 확인");
+    }
+
+    @RepeatedTest(10)
+    public void 성능_테스트() throws InterruptedException {
+        int threadCount = 100;
+        long start = System.nanoTime();
+        testSingletonPerformance(DoubleCheckedLockingSingleton::getInstance, threadCount);
+        long end = System.nanoTime();
+        System.out.println("Double Checked Locking Singleton Time: " + (end - start) + " ns");
+    }
+
+    private static void testSingletonPerformance(Runnable singletonMethod, int threadCount) throws InterruptedException {
+        ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
+
+        for (int i = 0; i < threadCount; i++) {
+            executorService.submit(singletonMethod);
+        }
+
+        executorService.shutdown();
+        executorService.awaitTermination(1, TimeUnit.MINUTES);
     }
 }
