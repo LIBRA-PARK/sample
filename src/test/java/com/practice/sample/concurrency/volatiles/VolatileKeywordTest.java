@@ -14,6 +14,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class VolatileKeywordTest {
     private static final Logger log = LoggerFactory.getLogger(VolatileKeywordTest.class);
+    private static final int NUM_THREADS = 10; // 스레드 개수
+    private static final int NUM_ITERATIONS = 1_000_000; // 반복 횟수
 
     @Test
     @DisplayName("메모리 가시성 문제")
@@ -67,5 +69,66 @@ class VolatileKeywordTest {
         assertEquals(0, calculator.getValue(),
                 "Expected value to be 0, but found " + calculator.getValue() +
                         ". This indicates a concurrency issue.");
+    }
+    
+    @Test
+    @DisplayName("synchronized 블로과 spinlock 소요시간 비교")
+    void LOCK_비교() {
+        Calculator calculator = new Calculator();
+        CalculatorWithSpinLock calculatorWithSpinLock = new CalculatorWithSpinLock();
+
+        long synchronizedTime = measureExecutionTime(() ->
+                runConcurrentTest(() -> {
+                    calculator.plus();
+                    calculator.minus();
+                })
+        );
+
+        long spinLockTime = measureExecutionTime(() ->
+                runConcurrentTest(() -> {
+                    calculatorWithSpinLock.plus();
+                    calculatorWithSpinLock.minus();
+                })
+        );
+
+        log.info("Synchronized Calculator execution time: {} ns", synchronizedTime);
+        log.info("SpinLock-based Calculator execution time: {} ns", spinLockTime);
+
+        // 두 Calculator의 최종 값이 동일한지 확인
+        assertEquals(0, calculator.getValue());
+        assertEquals(0, calculatorWithSpinLock.getValue());
+    }
+
+    private void runConcurrentTest(Runnable task) {
+        ExecutorService executor = Executors.newFixedThreadPool(NUM_THREADS);
+        CountDownLatch latch = new CountDownLatch(NUM_THREADS); // 스레드 개수만큼 초기화
+
+        for (int i = 0; i < NUM_THREADS; i++) {
+            executor.submit(() -> {
+                try {
+                    for (int j = 0; j < NUM_ITERATIONS / NUM_THREADS; j++) {
+                        task.run();
+                    }
+                } finally {
+                    latch.countDown();
+                }
+            });
+        }
+
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Test interrupted", e);
+        }
+
+        executor.shutdown();
+    }
+
+    private long measureExecutionTime(Runnable task) {
+        long startTime = System.nanoTime();
+        task.run();
+        long endTime = System.nanoTime();
+        return endTime - startTime;
     }
 }
